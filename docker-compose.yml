@@ -1,0 +1,39 @@
+version: '3'
+services:
+    tourguide:
+        container_name: tourguide
+        build:
+            context: ../TourGuide
+            dockerfile: Dockerfile
+        image: tourguide:latest
+        ports:
+            - 8080:8080
+            
+    gpsutil-microservice:
+        container_name: gpsutil-microservice
+        build:
+            context: ../GpsUtil
+            dockerfile: Dockerfile
+        image: gpsutil-microservice:latest
+        ports:
+            - 8081:8081
+
+    rewardcentral-microservice:
+        container_name: rewardcentral-microservice
+        build:
+            context: ../RewardCentral
+            dockerfile: Dockerfile
+        image: rewardcentral-microservice:latest
+        ports:
+            - 8082:8082
+
+    trippricer-microservice:
+        container_name: trippricer-microservice
+        build:
+            context: ../TripPricer
+            dockerfile: Dockerfile
+        image: trippricer-microservice:latest
+        ports:
+            - 8083:8083
+
+        
