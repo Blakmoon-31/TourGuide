@@ -42,6 +42,11 @@ public class RewardsService {
 		proximityBuffer = defaultProximityBuffer;
 	}
 
+	/**
+	 * Calculate rewards points for a user.
+	 * 
+	 * @param user - A User object
+	 */
 	public synchronized void calculateRewards(User user) {
 		List<VisitedLocationBean> locationsOfUser = user.getVisitedLocations();
 		List<VisitedLocationBean> userLocations = new CopyOnWriteArrayList<VisitedLocationBean>(locationsOfUser);
@@ -61,6 +66,11 @@ public class RewardsService {
 		}
 	}
 
+	/**
+	 * Calculate rewards points for a list of users. Use a pool of 100 threads.
+	 * 
+	 * @param user - An list of User objects
+	 */
 	public synchronized void calculateAllUsersRewards(List<User> users) {
 
 		final ExecutorService executorRewardsService = Executors.newFixedThreadPool(100);

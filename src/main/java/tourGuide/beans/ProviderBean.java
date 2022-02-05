@@ -2,6 +2,10 @@ package tourGuide.beans;
 
 import java.util.UUID;
 
+/**
+ * Class replacing the former object Provider from the library TripPricer.
+ *
+ */
 public class ProviderBean {
 
 	public UUID tripId;

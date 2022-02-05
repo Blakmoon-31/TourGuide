@@ -3,6 +3,10 @@ package tourGuide.beans;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * Class replacing the former object VisitedLocation from the library GpsUtil.
+ *
+ */
 public class VisitedLocationBean {
 
 	public UUID userId;

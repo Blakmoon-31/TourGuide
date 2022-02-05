@@ -1,5 +1,9 @@
 package tourGuide.beans;
 
+/**
+ * Class replacing the former object Location from the library GpsUtil.
+ *
+ */
 public class LocationBean {
 
 	public double latitude;

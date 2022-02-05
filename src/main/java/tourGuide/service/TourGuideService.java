@@ -28,7 +28,7 @@ import tourGuide.beans.AttractionBean;
 import tourGuide.beans.LocationBean;
 import tourGuide.beans.ProviderBean;
 import tourGuide.beans.VisitedLocationBean;
-import tourGuide.domain.NearAttraction;
+import tourGuide.domain.NearbyAttraction;
 import tourGuide.helper.InternalTestHelper;
 import tourGuide.proxies.GpsUtilProxy;
 import tourGuide.proxies.TripPricerProxy;
@@ -45,14 +45,17 @@ public class TourGuideService {
 	public final Tracker tracker;
 	boolean testMode = true;
 
+	private int numberOfNearbyAttractions = 5;
+
 	@Autowired
 	private TripPricerProxy tripPricerProxy;
 
 	@Autowired
 	private GpsUtilProxy gpsUtilProxy;
 
-	public TourGuideService(RewardsService rewardsService) {
+	public TourGuideService(GpsUtilProxy gpsUtilProxy, RewardsService rewardsService) {
 
+		this.gpsUtilProxy = gpsUtilProxy;
 		this.rewardsService = rewardsService;
 
 		if (testMode) {
@@ -98,6 +101,13 @@ public class TourGuideService {
 		return providers;
 	}
 
+	/**
+	 * Obtains the location of a user from the microservice GpsUtil.
+	 * 
+	 * @param user - A User object containging the user to track
+	 * 
+	 * @return - A VisitedLocationBean object
+	 */
 	public VisitedLocationBean trackUserLocation(User user) {
 		VisitedLocationBean visitedLocation = gpsUtilProxy.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
@@ -105,6 +115,12 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
+	/**
+	 * Obtains the location of a list of users from the microservice GpsUtil. Uses a
+	 * pool of 100 threads.
+	 * 
+	 * @param user - An list of User objects containging the users to track
+	 */
 	public void trackAllUsersLocations(List<User> users) {
 
 		final ExecutorService executorTourGuideService = Executors.newFixedThreadPool(100);
@@ -116,7 +132,6 @@ public class TourGuideService {
 				public VisitedLocationBean call() throws Exception {
 					VisitedLocationBean visitedLocation = gpsUtilProxy.getUserLocation(user.getUserId());
 					user.addToVisitedLocations(visitedLocation);
-					rewardsService.calculateRewards(user);
 					return visitedLocation;
 
 				}
@@ -132,20 +147,20 @@ public class TourGuideService {
 			executorTourGuideService.shutdown();
 		}
 
+		rewardsService.calculateAllUsersRewards(users);
+
 	}
 
-//	public List<AttractionBean> getNearByAttractions(VisitedLocationBean visitedLocationBean) {
-//		List<AttractionBean> nearbyAttractions = new ArrayList<>();
-//		for (AttractionBean attraction : gpsUtilProxy.getAllAttractions()) {
-//			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocationBean.location)) {
-//				nearbyAttractions.add(attraction);
-//			}
-//		}
-//
-//		return nearbyAttractions;
-//	}
-
-	public List<NearAttraction> get5ClosestAttractions(User user, VisitedLocationBean visitedLocationBean) {
+	/**
+	 * Obtains a list of attraction nearby the user's location. The number of
+	 * attractions is set by "numberOfNearbyAttractions".
+	 * 
+	 * @param user                - The user
+	 * @param visitedLocationBean - The location of the user
+	 * 
+	 * @return - A list of NearbyAttraction objects
+	 */
+	public List<NearbyAttraction> getNearbyAttractions(User user, VisitedLocationBean visitedLocationBean) {
 		double attractionBeanDistance;
 		HashMap<AttractionBean, Double> closestAttractions = new HashMap<AttractionBean, Double>();
 
@@ -154,28 +169,37 @@ public class TourGuideService {
 			closestAttractions.put(attractionBean, attractionBeanDistance);
 		}
 
-		List<AttractionBean> closestNAttractions = topNAttractions(closestAttractions, 5);
+		List<AttractionBean> closestNAttractions = topNAttractions(closestAttractions, numberOfNearbyAttractions);
 
-		List<NearAttraction> nearNClosestAttraction = new ArrayList<>();
+		List<NearbyAttraction> nearbyNClosestAttraction = new ArrayList<>();
 
 		for (AttractionBean attraction : closestNAttractions) {
-			NearAttraction nearAttraction = new NearAttraction();
+			NearbyAttraction nearbyAttraction = new NearbyAttraction();
 
-			nearAttraction.setAttractionName(attraction.attractionName);
-			nearAttraction.setAttractionLatitude(attraction.latitude);
-			nearAttraction.setAttractionLongitude(attraction.longitude);
-			nearAttraction.setUserLocation(visitedLocationBean.location);
-			nearAttraction
-					.setAttractionDistance(rewardsService.getDistance(attraction, nearAttraction.getUserLocation()));
-			nearAttraction.setAttractionRewardpoints(rewardsService.getRewardPoints(attraction, user));
+			nearbyAttraction.setAttractionName(attraction.attractionName);
+			nearbyAttraction.setAttractionLatitude(attraction.latitude);
+			nearbyAttraction.setAttractionLongitude(attraction.longitude);
+			nearbyAttraction.setUserLocation(visitedLocationBean.location);
+			nearbyAttraction
+					.setAttractionDistance(rewardsService.getDistance(attraction, nearbyAttraction.getUserLocation()));
+			nearbyAttraction.setAttractionRewardpoints(rewardsService.getRewardPoints(attraction, user));
 
-			nearNClosestAttraction.add(nearAttraction);
+			nearbyNClosestAttraction.add(nearbyAttraction);
 
 		}
 
-		return nearNClosestAttraction;
+		return nearbyNClosestAttraction;
 	}
 
+	/**
+	 * Determines the list of the N closests attractions, that is those at the
+	 * smallest distance.
+	 * 
+	 * @param map - The list of attractions and distances to sort
+	 * @param n   - The number of attractions to keep
+	 * 
+	 * @return - The list of the N closests AttractionBeans
+	 */
 	public static List<AttractionBean> topNAttractions(final HashMap<AttractionBean, Double> map, int n) {
 		PriorityQueue<AttractionBean> topN = new PriorityQueue<AttractionBean>(n, new Comparator<AttractionBean>() {
 			public int compare(AttractionBean s1, AttractionBean s2) {
@@ -202,12 +226,23 @@ public class TourGuideService {
 		});
 	}
 
+	/**
+	 * Update the user's preferences
+	 * 
+	 * @param userName        - The name of the user to update
+	 * @param userPreferences - A UserPreferences object with data to update
+	 */
 	public void updateUserPreferences(String userName, UserPreferences userPreferences) {
 		User userToUpdate = getUser(userName);
 		userToUpdate.setUserPreferences(userPreferences);
 
 	}
 
+	/**
+	 * Obtains a list of the last location of all users.
+	 * 
+	 * @return - A list with user's id and their locations
+	 */
 	public Map<String, LocationBean> getAllUserLocations() {
 		Map<String, LocationBean> allLocations = new HashMap<String, LocationBean>();
 

@@ -2,12 +2,17 @@ package tourGuide.domain;
 
 import tourGuide.beans.LocationBean;
 
-public class NearAttraction {
+/**
+ * Represent an attraction nearby the user.
+ * 
+ */
+public class NearbyAttraction {
 
 	private String attractionName;
 	private double attractionLatitude;
 	private double attractionLongitude;
 	private LocationBean userLocation;
+	// Distance between the attraction and the user's location
 	private double attractionDistance;
 	private int attractionRewardpoints;
 

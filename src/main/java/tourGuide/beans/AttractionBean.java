@@ -2,6 +2,10 @@ package tourGuide.beans;
 
 import java.util.UUID;
 
+/**
+ * Class replacing the former object Attraction from the library GpsUtil.
+ *
+ */
 public class AttractionBean extends LocationBean {
 
 	public UUID attractionId;

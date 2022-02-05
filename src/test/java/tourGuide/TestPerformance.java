@@ -31,7 +31,7 @@ import tourGuide.user.User;
 @TestInstance(Lifecycle.PER_CLASS)
 public class TestPerformance {
 
-	private int numberOfUsers = 100;
+	private int numberOfUsers = 100000;
 
 	@Autowired
 	private GpsUtilProxy gpsUtilProxy;
@@ -75,7 +75,7 @@ public class TestPerformance {
 		// Users should be incremented up to 100,000, and test finishes within 15
 		// minutes
 		InternalTestHelper.setInternalUserNumber(numberOfUsers);
-		TourGuideService tourGuideService = new TourGuideService(rewardsService);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtilProxy, rewardsService);
 
 		List<User> allUsers = new ArrayList<>();
 		allUsers = tourGuideService.getAllUsers();
@@ -87,6 +87,9 @@ public class TestPerformance {
 
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
+
+		System.out.println("User's visited locations : " + allUsers.get(0).getVisitedLocations().size()
+				+ " and user's rewards points : " + allUsers.get(0).getUserRewards().size());
 
 		System.out.println("highVolumeTrackLocation: Time Elapsed: "
 				+ TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
@@ -103,7 +106,7 @@ public class TestPerformance {
 
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		TourGuideService tourGuideService = new TourGuideService(rewardsService);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtilProxy, rewardsService);
 
 		AttractionBean attraction = gpsUtilProxy.getAllAttractions().get(0);
 		List<User> allUsers = new ArrayList<>();
@@ -115,6 +118,7 @@ public class TestPerformance {
 		for (User user : allUsers) {
 			assertThat(user.getUserRewards().size() > 0).isTrue();
 		}
+
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
 

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tourGuide.beans.LocationBean;
 import tourGuide.beans.ProviderBean;
 import tourGuide.beans.VisitedLocationBean;
-import tourGuide.domain.NearAttraction;
+import tourGuide.domain.NearbyAttraction;
 import tourGuide.dto.UserPreferencesDto;
 import tourGuide.service.TourGuideService;
 import tourGuide.user.User;
@@ -34,7 +34,11 @@ public class TourGuideController {
 		return "Greetings from TourGuide!";
 	}
 
-	// For tests, get generated user's names
+	/**
+	 * For test purpose only, get the list of generated user's names.
+	 * 
+	 * @return - A list of strings containing the user's names
+	 */
 	@RequestMapping("/users")
 	public List<String> getUsersNames() {
 		List<User> users = tourGuideService.getAllUsers();
@@ -53,22 +57,23 @@ public class TourGuideController {
 		return visitedLocation.location;
 	}
 
-	// TODO: Change this method to no longer return a List of Attractions.
-	// Instead: Get the closest five tourist attractions to the user - no matter how
-	// far away they are.
-	// Return a new JSON object that contains:
-	// Name of Tourist attraction,
-	// Tourist attractions lat/long,
-	// The user's location lat/long,
-	// The distance in miles between the user's location and each of the
-	// attractions.
-	// The reward points for visiting each Attraction.
-	// Note: Attraction reward points can be gathered from RewardsCentral
+	/**
+	 * Get the closest tourist attractions to the user - no matter how far away they
+	 * are.
+	 * 
+	 * @param userName - The name of the specific user
+	 * 
+	 * @return - A JSON object from a list of NearbyAttraction that contains : Name
+	 *         of Tourist attraction, Tourist attractions lat/long, The user's
+	 *         location lat/long, The distance in miles between the user's location
+	 *         and each of the attractions, The reward points for visiting each
+	 *         Attraction
+	 */
 	@RequestMapping("/getNearbyAttractions")
-	public List<NearAttraction> getNearbyAttractions(@RequestParam String userName) {
+	public List<NearbyAttraction> getNearbyAttractions(@RequestParam String userName) {
 		VisitedLocationBean visitedLocation = tourGuideService.getUserLocation(getUser(userName));
 		User user = getUser(userName);
-		return tourGuideService.get5ClosestAttractions(user, visitedLocation);
+		return tourGuideService.getNearbyAttractions(user, visitedLocation);
 	}
 
 	@RequestMapping("/getRewards")
@@ -76,20 +81,15 @@ public class TourGuideController {
 		return tourGuideService.getUserRewards(getUser(userName));
 	}
 
+	/**
+	 * Get a list of every user's most recent location as JSON. Does not use gpsUtil
+	 * to query for their current location, but gathers the user's last location
+	 * from their stored location history.
+	 * 
+	 * @return - A JSON object containing the list of users and their location
+	 */
 	@RequestMapping("/getAllCurrentLocations")
 	public Map<String, LocationBean> getAllCurrentLocations() {
-		// TODO: Get a list of every user's most recent location as JSON
-		// - Note: does not use gpsUtil to query for their current location,
-		// but rather gathers the user's current location from their stored location
-		// history.
-		//
-		// Return object should be the just a JSON mapping of userId to Locations
-		// similar to:
-		// {
-		// "019b04a9-067a-4c76-8817-ee75088c3822":
-		// {"longitude":-48.188821,"latitude":74.84371}
-		// ...
-		// }
 
 		Map<String, LocationBean> allUserLocations = tourGuideService.getAllUserLocations();
 
@@ -106,6 +106,15 @@ public class TourGuideController {
 		return tourGuideService.getUser(userName);
 	}
 
+	/**
+	 * Update preferences of a user. Use a DTO object to perform JSON
+	 * serialization/deserialization without having to manage currencies fields.
+	 * 
+	 * @param userName           - The name of the user to update
+	 * @param userPreferencesDto - A DTO object
+	 * 
+	 * @return - A User object updated
+	 */
 	@RequestMapping("/updateUserPreferences")
 	public User updateUserPreferences(@RequestParam String userName,
 			@RequestBody UserPreferencesDto userPreferencesDto) {
